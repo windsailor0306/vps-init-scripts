@@ -8,7 +8,6 @@ NC='\033[0m' # 没有颜色
 
 # 显示菜单
 show_menu() {
-    clear
     echo -e "${GREEN}Debian VPS 初始化菜单${NC}"
     echo "---------------------------"
     echo "1. 安装 UFW 防火墙并启用"
