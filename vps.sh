@@ -33,9 +33,150 @@ show_menu() {
     esac
 }
 
-# 防火墙管理功能略（保持不变）
+# 防火墙菜单
+firewall_menu() {
+    echo -e "${green}\t1.${plain} 安装防火墙并开放端口"
+    echo -e "${green}\t2.${plain} 查看已开放端口"
+    echo -e "${green}\t3.${plain} 从列表中删除端口"
+    echo -e "${green}\t4.${plain} 禁用防火墙"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -p "请输入选项: " choice
+    case "$choice" in
+    0)
+        show_menu
+        ;;
+    1)
+        open_ports
+        ;;
+    2)
+        sudo ufw status
+        ;;
+    3)
+        delete_ports
+        ;;
+    4)
+        sudo ufw disable
+        ;;
+    *)
+        echo "无效选项，请重试"
+        ;;
+    esac
+}
 
-# BBR 管理功能略（保持不变）
+# 启用端口功能
+open_ports() {
+    if ! command -v ufw &>/dev/null; then
+        echo "ufw 防火墙未安装，正在安装..."
+        apt-get update && apt-get install -y ufw
+    fi
+
+    if ! ufw status | grep -q "Status: active"; then
+        ufw allow ssh
+        ufw allow http
+        ufw allow https
+        ufw allow 2053/tcp
+        ufw --force enable
+    fi
+
+    read -p "输入您要打开的端口（例如 80,443 或范围 400-500): " ports
+    if [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
+        IFS=',' read -ra PORT_LIST <<<"$ports"
+        for port in "${PORT_LIST[@]}"; do
+            if [[ $port == *-* ]]; then
+                start_port=$(echo "$port" | cut -d'-' -f1)
+                end_port=$(echo "$port" | cut -d'-' -f2)
+                for ((i = start_port; i <= end_port; i++)); do
+                    ufw allow "$i"
+                done
+            else
+                ufw allow "$port"
+            fi
+        done
+        echo "指定端口已开放"
+    else
+        echo "输入格式无效"
+    fi
+}
+
+# 删除端口功能
+delete_ports() {
+    read -p "输入要删除的端口（例如 80,443 或范围 400-500): " ports
+    if [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
+        IFS=',' read -ra PORT_LIST <<<"$ports"
+        for port in "${PORT_LIST[@]}"; do
+            if [[ $port == *-* ]]; then
+                start_port=$(echo "$port" | cut -d'-' -f1)
+                end_port=$(echo "$port" | cut -d'-' -f2)
+                for ((i = start_port; i <= end_port; i++)); do
+                    ufw delete allow "$i"
+                done
+            else
+                ufw delete allow "$port"
+            fi
+        done
+        echo "指定端口已删除"
+    else
+        echo "输入格式无效"
+    fi
+}
+
+# BBR 菜单
+bbr_menu() {
+    echo -e "${green}\t1.${plain} 启用 BBR"
+    echo -e "${green}\t2.${plain} 禁用 BBR"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -p "请输入选项: " choice
+    case "$choice" in
+    0)
+        show_menu
+        ;;
+    1)
+        enable_bbr
+        ;;
+    2)
+        disable_bbr
+        ;;
+    *)
+        echo "无效选项，请重试"
+        ;;
+    esac
+}
+
+# 启用 BBR 功能
+enable_bbr() {
+    if grep -q "net.core.default_qdisc=fq" /etc/sysctl.conf && grep -q "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+        echo "BBR 已经启用"
+        return
+    fi
+
+    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    sysctl -p
+
+    if [[ $(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}') == "bbr" ]]; then
+        echo "BBR 启用成功"
+    else
+        echo "BBR 启用失败"
+    fi
+}
+
+# 禁用 BBR 功能
+disable_bbr() {
+    if ! grep -q "net.core.default_qdisc=fq" /etc/sysctl.conf || ! grep -q "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+        echo "BBR 当前未启用"
+        return
+    fi
+
+    sed -i 's/net.core.default_qdisc=fq/net.core.default_qdisc=pfifo_fast/' /etc/sysctl.conf
+    sed -i 's/net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=cubic/' /etc/sysctl.conf
+    sysctl -p
+
+    if [[ $(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}') == "cubic" ]]; then
+        echo "BBR 已成功禁用"
+    else
+        echo "禁用 BBR 失败"
+    fi
+}
 
 # 证书管理菜单
 ssl_cert_menu() {
