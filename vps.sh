@@ -41,7 +41,7 @@ show_menu() {
     echo -e "${green}\t1.${plain} 防火墙管理"
     echo -e "${green}\t2.${plain} BBR 管理"
     echo -e "${green}\t3.${plain} 证书管理 (acme.sh)"
-    echo -e "${green}\t4.${plain} SSL 证书管理（额外选项，原脚本中的相关功能细化）"
+    echo -e "${green}\t4.${plain} Nginx管理"
     echo -e "${green}\t5.${plain} 生成 Nginx 配置文件并启动"
     echo -e "${green}\t6.${plain} 设置 80 端口重定向到 443"
     echo -e "${green}\t0.${plain} 退出脚本"
@@ -61,7 +61,7 @@ show_menu() {
             ssl_cert_menu
             ;;
         4)
-            ssl_cert_menu_extended
+            nginx_menu
             ;;
         5)
             generate_nginx_config
@@ -79,7 +79,7 @@ show_menu() {
 firewall_menu() {
     echo -e "${green}\t1.${plain} 安装防火墙并开放端口"
     echo -e "${green}\t2.${plain} 查看已开放端口"
-    echo -e "${green}\t3.${flat} 从列表中删除端口"
+    echo -e "${green}\t3.${plain} 从列表中删除端口"
     echo -e "${green}\t4.${plain} 禁用防火墙"
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -p "请输入选项: " choice
@@ -118,7 +118,7 @@ open_ports() {
         ufw allow https
         ufw allow 2053/tcp
         ufw --force enable
-    endif
+    fi
 
     read -p "输入您要打开的端口（例如 80,443 或范围 400-500): " ports
     if [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
@@ -148,7 +148,7 @@ delete_ports() {
         for port in "${PORT_LIST[@]}"; do
             if [[ $port == *-* ]]; then
                 start_port=$(echo "$port" | cut -d'-' -f1)
-                end_port=$(echo "$port" | cut -d'-' -f2)
+                end_port=$(print "$port" | cut -d'-' -f2)
                 for ((i = start_port; i <= end_port; i++)); do
                     ufw delete allow "$i"
                 done
@@ -284,20 +284,20 @@ ssl_cert_issue_CF() {
     mkdir -p "$certPath" && rm -rf "${certPath:?}/*"
 
     # 获取用户输入
-    while [[ -z $CF_Domain ]]; do
-        read -p "请输入您的域名: " CF_Domain
+    while [[ -z $CF_Domain ]]; then
+        read -p "请输入您的域名: " CF_DDdomain
     done
     echo "您的域名为: $CF_Domain"
 
-    while [[ -z $CF_GlobalKey ]]; do
+    while [[ -z $CF_GlobalKey ]]; then
         read -p "请输入您的 CF Global API Key: " CF_GlobalKey
     end
-    echo "您的 API 密钥是: CF_GlobalKey"
+    echo "您的 API 密钥是: $CF_GlobalKey"
 
-    while [[ -z $CF_AccountEmail ]]; do
+    while [[ -z $CF_AccountEmail ]]; then
         read -p "请输入您的邮箱: " CF_AccountEmail
     end
-    echo "您的账号邮箱地址是: CF_AccountEmail"
+    echo "您的账号邮箱地址是: $CF_AccountEmail"
 
     # 设置默认 CA
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt || {
@@ -342,11 +342,10 @@ ssl_cert_issue_CF() {
     echo -e "${yellow}请确保 80 和 443 端口已打开放行${plain}"
 }
 
-# 证书管理菜单（扩展的，包含原脚本中相关但更细化的功能）
-ssl_cert_menu_extended() {
-    echo -e "${green}\t1.${plain} 安装 acme.sh"
-    echo -e "${green}\t2.${plain} 使用 Cloudflare 颁发 SSL 证书"
-    echo -e "${green}\t3.${plain} 其他 SSL 证书相关操作（可进一步扩展）"
+# Nginx管理菜单
+nginx_menu() {
+    echo -e "${green}\t1.${plain} 检查并安装Nginx"
+    echo -e "${green}\t2.${plain} 创建Nginx相关目录"
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -p "请输入选项: " choice
     case "$choice" in
@@ -354,13 +353,10 @@ ssl_cert_menu_extended() {
             show_menu
             ;;
         1)
-            install_acme
+            install_nginx
             ;;
         2)
-            ssl_cert_issue_CF
-            ;;
-        3)
-            echo "待扩展的其他 SSL 证书相关操作"
+            create_nginx_dirs
             ;;
         *)
             echo "无效选项，请重试"
@@ -377,8 +373,8 @@ generate_nginx_config() {
     install_nginx
 
     read -p "请输入您的域名: " DOMAIN
-    read -p "请输入外网访问的端口 (如: 443): " EXTERNAL_PORT
-    read -p "请输入内网服务的端口 (如: 7001): " INTERNAL_PORT
+    read -p "您要设置的外网访问端口 (如: 443): " EXTERNAL_PORT
+    read -p "您要设置的内网服务端口 (如: 7001): " INTERNAL_PORT
 
     CONF_PATH="/etc/nginx/sites-available/${DOMAIN}.conf"
 
@@ -413,7 +409,7 @@ EOF
     systemctl reload nginx
 
     echo "Nginx 配置已完成，文件位置：$CONF_PATH"
-    echo "已将 $DOMAIN 的外网 $EXTERNAL_PORT 转发到内网服务端口 $INTERNAL_PORT。"
+    echo "已将 $DOMAIN 的外网 $EXTERNAL_PORT 端口的访问请求转发到内网服务端口 $INTERNAL_PORT。"
 }
 
 # 设置 80 端口重定向到 443
