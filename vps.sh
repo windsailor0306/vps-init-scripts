@@ -31,7 +31,7 @@ show_menu() {
             echo -e "${red}无效选项，请重新输入${plain}"
             ;;
     esac
-
+}
 
 # 防火墙菜单
 firewall_menu() {
@@ -42,24 +42,24 @@ firewall_menu() {
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -p "请输入选项: " choice
     case "$choice" in
-    0)
-        show_menu
-        ;;
-    1)
-        open_ports
-        ;;
-    2)
-        sudo ufw status
-        ;;
-    3)
-        delete_ports
-        ;;
-    4)
-        sudo ufw disable
-        ;;
-    *)
-        echo "无效选项，请重试"
-        ;;
+        0)
+            show_menu
+            ;;
+        1)
+            open_ports
+            ;;
+        2)
+            sudo ufw status
+            ;;
+        3)
+            delete_ports
+            ;;
+        4)
+            sudo ufw disable
+            ;;
+        *)
+            echo "无效选项，请重试"
+            ;;
     esac
 }
 
@@ -127,18 +127,18 @@ bbr_menu() {
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -p "请输入选项: " choice
     case "$choice" in
-    0)
-        show_menu
-        ;;
-    1)
-        enable_bbr
-        ;;
-    2)
-        disable_bbr
-        ;;
-    *)
-        echo "无效选项，请重试"
-        ;;
+        0)
+            show_menu
+            ;;
+        1)
+            enable_bbr
+            ;;
+        2)
+            disable_bbr
+            ;;
+        *)
+            echo "无效选项，请重试"
+            ;;
     esac
 }
 
@@ -185,18 +185,18 @@ ssl_cert_menu() {
     echo -e "${green}\t0.${plain} 返回主菜单"
     read -p "请输入选项: " choice
     case "$choice" in
-    0)
-        show_menu
-        ;;
-    1)
-        install_acme
-        ;;
-    2)
-        ssl_cert_issue_CF
-        ;;
-    *)
-        echo "无效选项，请重试"
-        ;;
+        0)
+            show_menu
+            ;;
+        1)
+            install_acme
+            ;;
+        2)
+            ssl_cert_issue_CF
+            ;;
+        *)
+            echo "无效选项，请重试"
+            ;;
     esac
 }
 
@@ -211,6 +211,7 @@ install_acme() {
         return 1
     fi
 }
+
 
 # 使用 Cloudflare 颁发 SSL 证书
 ssl_cert_issue_CF() {
