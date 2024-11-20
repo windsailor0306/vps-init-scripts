@@ -14,24 +14,24 @@ show_menu() {
     echo -e "${green}\t0.${plain} 退出脚本"
     read -p "请输入选项: " choice
     case "$choice" in
-    1)
-        firewall_menu
-        ;;
-    2)
-        bbr_menu
-        ;;
-    3)
-        ssl_cert_menu
-        ;;
-    0)
-        echo -e "${green}退出脚本${plain}"
-        exit 0
-        ;;
-    *)
-        echo -e "${red}无效选项，请重新输入${plain}"
-        ;;
+        1)
+            firewall_menu
+            ;;
+        2)
+            bbr_menu
+            ;;
+        3)
+            ssl_cert_menu
+            ;;
+        0)
+            echo -e "${green}退出脚本${plain}"
+            exit 0
+            ;;
+        *)
+            echo -e "${red}无效选项，请重新输入${plain}"
+            ;;
     esac
-}
+
 
 # 防火墙菜单
 firewall_menu() {
